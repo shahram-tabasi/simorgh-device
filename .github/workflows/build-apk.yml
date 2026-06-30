@@ -83,29 +83,41 @@ jobs:
           }
           EOF
 
-      - name: Build release APK
-        run: flutter build apk --release
+      - name: Build release APKs (split per ABI)
+        # Per-ABI APKs are far smaller than the universal one (each carries the
+        # native libs for a single CPU only), so they transfer/install easily.
+        run: flutter build apk --release --split-per-abi
 
-      - name: Rename APK
-        run: cp build/app/outputs/flutter-apk/app-release.apk simorgh-device.apk
+      - name: Collect APKs
+        run: |
+          src=build/app/outputs/flutter-apk
+          cp "$src/app-arm64-v8a-release.apk"   simorgh-device-arm64.apk
+          cp "$src/app-armeabi-v7a-release.apk" simorgh-device-arm32.apk || true
+          ls -la simorgh-device-*.apk
 
-      - name: Upload APK artifact
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
           name: simorgh-device-release-apk
-          path: simorgh-device.apk
+          path: simorgh-device-*.apk
           if-no-files-found: error
 
-      - name: Publish APK to a GitHub Release
-        # Gives a direct, phone-installable download link (a rolling pre-release
+      - name: Publish APKs to a GitHub Release
+        # Gives direct, phone-installable download links (a rolling pre-release
         # that is overwritten on each successful build).
         uses: softprops/action-gh-release@v2
         with:
           tag_name: apk-latest
           name: سیمرغ‌دستگاه — آخرین APK تست
           prerelease: true
-          files: simorgh-device.apk
+          files: |
+            simorgh-device-arm64.apk
+            simorgh-device-arm32.apk
           body: |
             آخرین نسخهٔ تست اپلیکیشن سیمرغ‌دستگاه.
-            از فایل `simorgh-device.apk` زیر برای نصب روی تبلت/گوشی استفاده کنید.
+
+            اکثر تبلت‌ها و گوشی‌های امروزی **arm64** هستند:
+            فایل `simorgh-device-arm64.apk` را نصب کنید.
+            برای دستگاه‌های خیلی قدیمی: `simorgh-device-arm32.apk`.
+
             ورود پیش‌فرض: admin / 1234
