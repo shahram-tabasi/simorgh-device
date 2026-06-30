@@ -23,10 +23,12 @@ jobs:
           java-version: "17"
 
       - name: Set up Flutter
+        # Use the latest stable Flutter: the resolved plugin versions
+        # (geolocator_android, mlkit, …) require compileSdk 35 and the newer
+        # Flutter Gradle plugin, which older Flutter releases don't provide.
         uses: subosito/flutter-action@v2
         with:
           channel: stable
-          flutter-version: "3.24.0"
           cache: true
 
       - name: Generate Android platform files
