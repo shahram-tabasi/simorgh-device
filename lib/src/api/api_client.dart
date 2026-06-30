@@ -82,11 +82,13 @@ class ApiClient {
   }
 
   /// Enroll a face embedding for a member (by personnel code, email or member id).
+  /// The captured face photo is stored alongside the embedding when provided.
   Future<({bool ok, int samples, String? error})> enroll({
     required List<double> embedding,
     String? personnelCode,
     String? email,
     String? memberId,
+    String? photoBase64,
   }) async {
     final body = <String, dynamic>{
       'embedding': embedding,
@@ -94,6 +96,7 @@ class ApiClient {
         'personnel_code': personnelCode,
       if (email != null && email.isNotEmpty) 'email': email,
       if (memberId != null && memberId.isNotEmpty) 'member_id': memberId,
+      if (photoBase64 != null) 'photo_url': photoBase64,
     };
     try {
       final r = await http

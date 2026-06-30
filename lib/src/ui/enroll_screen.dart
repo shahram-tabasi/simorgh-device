@@ -1,5 +1,8 @@
+import 'dart:convert';
+
 import 'package:camera/camera.dart';
 import 'package:flutter/material.dart';
+import 'package:image/image.dart' as img;
 
 import '../api/api_client.dart';
 import '../config/app_config.dart';
@@ -82,10 +85,14 @@ class _EnrollScreenState extends State<EnrollScreen> {
         setState(() => _msg = cap.error ?? 'چهره تشخیص داده نشد.');
         return;
       }
+      // Always store the captured face photo with the enrollment so the
+      // person's image is on file (recognition still uses the embedding).
+      final photo = cap.faceCrop != null ? _encodePhoto(cap.faceCrop!) : null;
       final res = await _api.enroll(
         embedding: cap.embedding!,
         personnelCode: code,
         email: email,
+        photoBase64: photo,
       );
       if (!res.ok) {
         setState(() => _msg = res.error ?? 'ثبت ناموفق بود.');
@@ -100,6 +107,12 @@ class _EnrollScreenState extends State<EnrollScreen> {
     } finally {
       if (mounted) setState(() => _busy = false);
     }
+  }
+
+  String _encodePhoto(img.Image face) {
+    final small = img.copyResize(face, width: 320);
+    final jpg = img.encodeJpg(small, quality: 70);
+    return 'data:image/jpeg;base64,${base64Encode(jpg)}';
   }
 
   @override
