@@ -32,7 +32,9 @@ jobs:
       - name: Generate Android platform files
         # The repo keeps only a custom AndroidManifest.xml; this generates the
         # Gradle/MainActivity scaffolding without touching existing files.
-        run: flutter create --org ir.simorghkara --platforms=android .
+        # --project-name is required because the checkout dir ("simorgh-device")
+        # has a hyphen, which is not a valid Dart package name.
+        run: flutter create --org ir.simorghkara --project-name simorgh_device --platforms=android .
 
       - name: Install dependencies
         run: flutter pub get
