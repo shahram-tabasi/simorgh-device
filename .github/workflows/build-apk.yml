@@ -38,11 +38,17 @@ jobs:
         # has a hyphen, which is not a valid Dart package name.
         run: flutter create --org ir.simorghkara --project-name simorgh_device --platforms=android .
 
-      - name: Relax Kotlin/Java JVM target validation
-        # Some plugins (e.g. tflite_flutter) compile Java at 1.8 while Kotlin
-        # defaults to 17 under JDK 17, tripping KGP's strict JVM-target check.
-        # Downgrading it to a warning lets the (otherwise valid) build proceed.
-        run: echo "kotlin.jvm.target.validation.mode=warning" >> android/gradle.properties
+      - name: Patch Gradle properties for plugin compatibility
+        # 1) tflite_flutter compiles Java at 1.8 while Kotlin defaults to 17
+        #    under JDK 17, tripping KGP's strict JVM-target check.
+        # 2) The bundled TensorFlow Lite AARs (tensorflow-lite / -gpu / -api)
+        #    all declare the org.tensorflow.lite namespace, which AGP rejects as
+        #    a duplicate. uniquePackageNames=false relaxes that check.
+        run: |
+          {
+            echo "kotlin.jvm.target.validation.mode=warning"
+            echo "android.uniquePackageNames=false"
+          } >> android/gradle.properties
 
       - name: Install dependencies
         run: flutter pub get
