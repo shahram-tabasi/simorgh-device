@@ -202,7 +202,11 @@ class _TerminalScreenState extends State<TerminalScreen>
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 6),
       child: Row(
         children: [
-          const Text('🔆', style: TextStyle(fontSize: 18)),
+          ClipRRect(
+            borderRadius: BorderRadius.circular(6),
+            child: Image.asset('assets/branding/logo.png',
+                width: 26, height: 26, fit: BoxFit.cover),
+          ),
           const SizedBox(width: 8),
           Expanded(
             child: Column(
