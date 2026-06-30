@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 
 import 'src/config/app_config.dart';
 import 'src/config/config_store.dart';
+import 'src/ui/login_screen.dart';
 import 'src/ui/settings_screen.dart';
 import 'src/ui/terminal_screen.dart';
 import 'src/ui/theme.dart';
@@ -29,10 +30,28 @@ class SimorghDeviceApp extends StatefulWidget {
 class _SimorghDeviceAppState extends State<SimorghDeviceApp> {
   late AppConfig _config = widget.initialConfig;
   final _store = ConfigStore();
+  bool _loggedIn = false;
 
   Future<void> _onConfigChanged(AppConfig c) async {
     await _store.save(c);
     setState(() => _config = c);
+  }
+
+  Widget _home() {
+    if (!_config.isConfigured) {
+      return SettingsScreen(
+        config: _config,
+        onSaved: _onConfigChanged,
+        firstRun: true,
+      );
+    }
+    if (_config.loginEnabled && !_loggedIn) {
+      return LoginScreen(
+        config: _config,
+        onSuccess: () => setState(() => _loggedIn = true),
+      );
+    }
+    return TerminalScreen(config: _config, onConfigChanged: _onConfigChanged);
   }
 
   @override
@@ -47,13 +66,7 @@ class _SimorghDeviceAppState extends State<SimorghDeviceApp> {
         textDirection: TextDirection.rtl,
         child: child ?? const SizedBox.shrink(),
       ),
-      home: _config.isConfigured
-          ? TerminalScreen(config: _config, onConfigChanged: _onConfigChanged)
-          : SettingsScreen(
-              config: _config,
-              onSaved: _onConfigChanged,
-              firstRun: true,
-            ),
+      home: _home(),
     );
   }
 }

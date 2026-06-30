@@ -14,6 +14,7 @@ class ManualPunchScreen extends StatefulWidget {
 }
 
 class _ManualPunchScreenState extends State<ManualPunchScreen> {
+  final _code = TextEditingController();
   final _email = TextEditingController();
   late final ApiClient _api = ApiClient(widget.config);
   bool _busy = false;
@@ -22,16 +23,18 @@ class _ManualPunchScreenState extends State<ManualPunchScreen> {
 
   @override
   void dispose() {
+    _code.dispose();
     _email.dispose();
     super.dispose();
   }
 
   Future<void> _punch(String kind) async {
+    final code = _code.text.trim();
     final email = _email.text.trim();
-    if (email.isEmpty) {
+    if (code.isEmpty && email.isEmpty) {
       setState(() {
         _ok = false;
-        _msg = 'ایمیل کارمند را وارد کنید.';
+        _msg = 'کد پرسنلی (یا ایمیل) کارمند را وارد کنید.';
       });
       return;
     }
@@ -39,7 +42,11 @@ class _ManualPunchScreenState extends State<ManualPunchScreen> {
       _busy = true;
       _msg = null;
     });
-    final res = await _api.manualPunch(kind: kind, email: email);
+    final res = await _api.manualPunch(
+      kind: kind,
+      personnelCode: code,
+      email: email,
+    );
     setState(() {
       _busy = false;
       _ok = res.ok;
@@ -47,7 +54,10 @@ class _ManualPunchScreenState extends State<ManualPunchScreen> {
           ? '${kind == 'in' ? 'ورود' : 'خروج'} با موفقیت ثبت شد.'
           : res.error;
     });
-    if (res.ok) _email.clear();
+    if (res.ok) {
+      _code.clear();
+      _email.clear();
+    }
   }
 
   @override
@@ -57,15 +67,25 @@ class _ManualPunchScreenState extends State<ManualPunchScreen> {
       body: ListView(
         padding: const EdgeInsets.all(18),
         children: [
-          const Text('کد/ایمیل کارمند را وارد و ورود یا خروج را ثبت کنید.',
+          const Text('کد پرسنلی (یا ایمیل) کارمند را وارد و ورود یا خروج را ثبت کنید.',
               style: TextStyle(color: Colors.white70)),
           const SizedBox(height: 14),
+          TextField(
+            controller: _code,
+            textDirection: TextDirection.ltr,
+            keyboardType: TextInputType.number,
+            decoration: const InputDecoration(
+              labelText: 'کد پرسنلی',
+              hintText: '۱۰۲۳',
+            ),
+          ),
+          const SizedBox(height: 12),
           TextField(
             controller: _email,
             textDirection: TextDirection.ltr,
             keyboardType: TextInputType.emailAddress,
             decoration: const InputDecoration(
-              labelText: 'ایمیل کارمند',
+              labelText: 'ایمیل کارمند (اختیاری)',
               hintText: 'ali@company.ir',
             ),
           ),

@@ -81,14 +81,17 @@ class ApiClient {
     }
   }
 
-  /// Enroll a face embedding for a member (by email or member id).
+  /// Enroll a face embedding for a member (by personnel code, email or member id).
   Future<({bool ok, int samples, String? error})> enroll({
     required List<double> embedding,
+    String? personnelCode,
     String? email,
     String? memberId,
   }) async {
     final body = <String, dynamic>{
       'embedding': embedding,
+      if (personnelCode != null && personnelCode.isNotEmpty)
+        'personnel_code': personnelCode,
       if (email != null && email.isNotEmpty) 'email': email,
       if (memberId != null && memberId.isNotEmpty) 'member_id': memberId,
     };
@@ -106,9 +109,10 @@ class ApiClient {
     }
   }
 
-  /// Manual punch by personnel email / member id (fallback when face fails).
+  /// Manual punch by personnel code / email / member id (fallback when face fails).
   Future<PunchResult> manualPunch({
     required String kind, // 'in' | 'out'
+    String? personnelCode,
     String? email,
     String? memberId,
     double? lat,
@@ -116,6 +120,8 @@ class ApiClient {
   }) async {
     final body = <String, dynamic>{
       'kind': kind,
+      if (personnelCode != null && personnelCode.isNotEmpty)
+        'personnel_code': personnelCode,
       if (email != null && email.isNotEmpty) 'email': email,
       if (memberId != null && memberId.isNotEmpty) 'member_id': memberId,
       if (lat != null) 'lat': lat,

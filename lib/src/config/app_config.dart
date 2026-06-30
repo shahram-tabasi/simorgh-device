@@ -48,6 +48,8 @@ class AppConfig {
     this.attachGps = false,
     this.autoCapture = true,
     this.matchThreshold = 0.62,
+    this.adminUser = 'admin',
+    this.adminPass = '1234',
   });
 
   /// e.g. https://app.simorghkara.ir  (no trailing slash needed)
@@ -68,6 +70,17 @@ class AppConfig {
   /// client-side guard before sending (server also enforces its own threshold)
   final double matchThreshold;
 
+  /// operator credentials required to unlock this terminal on launch.
+  final String adminUser;
+  final String adminPass;
+
+  /// whether the terminal is locked behind the login screen on launch.
+  bool get loginEnabled => adminPass.trim().isNotEmpty;
+
+  /// validate operator credentials entered on the login screen.
+  bool checkLogin(String user, String pass) =>
+      user.trim() == adminUser.trim() && pass == adminPass;
+
   bool get isConfigured =>
       baseUrl.trim().isNotEmpty &&
       slug.trim().isNotEmpty &&
@@ -83,6 +96,8 @@ class AppConfig {
     bool? attachGps,
     bool? autoCapture,
     double? matchThreshold,
+    String? adminUser,
+    String? adminPass,
   }) {
     return AppConfig(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -94,6 +109,8 @@ class AppConfig {
       attachGps: attachGps ?? this.attachGps,
       autoCapture: autoCapture ?? this.autoCapture,
       matchThreshold: matchThreshold ?? this.matchThreshold,
+      adminUser: adminUser ?? this.adminUser,
+      adminPass: adminPass ?? this.adminPass,
     );
   }
 }

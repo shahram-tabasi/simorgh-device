@@ -23,6 +23,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late final _baseUrl = TextEditingController(text: widget.config.baseUrl);
   late final _slug = TextEditingController(text: widget.config.slug);
   late final _token = TextEditingController(text: widget.config.deviceToken);
+  late final _adminUser = TextEditingController(text: widget.config.adminUser);
+  late final _adminPass = TextEditingController(text: widget.config.adminPass);
   late String _kind = widget.config.deviceKind;
   late PunchDirection _dir = widget.config.direction;
   late bool _photo = widget.config.attachPhoto;
@@ -36,6 +38,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
     _baseUrl.dispose();
     _slug.dispose();
     _token.dispose();
+    _adminUser.dispose();
+    _adminPass.dispose();
     super.dispose();
   }
 
@@ -59,6 +63,8 @@ class _SettingsScreenState extends State<SettingsScreen> {
       attachGps: _gps,
       autoCapture: _auto,
       matchThreshold: _threshold,
+      adminUser: _adminUser.text.trim().isEmpty ? 'admin' : _adminUser.text,
+      adminPass: _adminPass.text,
     );
     await widget.onSaved(c);
     if (!mounted) return;
@@ -87,7 +93,18 @@ class _SettingsScreenState extends State<SettingsScreen> {
           _field(_baseUrl, 'آدرس سرور', ltr: true, hint: 'https://app.simorghkara.ir'),
           _field(_slug, 'اسلاگ شرکت', ltr: true, hint: 'aahangari-demo'),
           _field(_token, 'توکن دستگاه', ltr: true, hint: 'device token'),
-          const SizedBox(height: 12),
+          const Divider(height: 28),
+          _label('ورود اپراتور به دستگاه'),
+          const Padding(
+            padding: EdgeInsets.only(bottom: 8, right: 2),
+            child: Text(
+              'این نام کاربری و گذرواژه برای باز کردن قفل ترمینال هنگام اجرا لازم است. اگر گذرواژه را خالی بگذارید، صفحهٔ ورود نمایش داده نمی‌شود.',
+              style: TextStyle(color: Colors.white54, fontSize: 12),
+            ),
+          ),
+          _field(_adminUser, 'نام کاربری دستگاه', ltr: true, hint: 'admin'),
+          _field(_adminPass, 'گذرواژه دستگاه', ltr: true, hint: '••••'),
+          const Divider(height: 28),
           _label('نوع دستگاه'),
           DropdownButtonFormField<String>(
             value: _kind,

@@ -6,7 +6,8 @@ import '../config/app_config.dart';
 import '../face/face_service.dart';
 import 'theme.dart';
 
-/// Enroll one or more face samples for a member (identified by email).
+/// Enroll one or more face samples for a member (identified by personnel
+/// code, with email as an optional fallback).
 /// Multiple samples improve recognition accuracy.
 class EnrollScreen extends StatefulWidget {
   const EnrollScreen({
@@ -23,6 +24,7 @@ class EnrollScreen extends StatefulWidget {
 }
 
 class _EnrollScreenState extends State<EnrollScreen> {
+  final _code = TextEditingController();
   final _email = TextEditingController();
   late final ApiClient _api = ApiClient(widget.config);
   CameraController? _camera;
@@ -55,14 +57,16 @@ class _EnrollScreenState extends State<EnrollScreen> {
   @override
   void dispose() {
     _camera?.dispose();
+    _code.dispose();
     _email.dispose();
     super.dispose();
   }
 
   Future<void> _captureAndEnroll() async {
+    final code = _code.text.trim();
     final email = _email.text.trim();
-    if (email.isEmpty) {
-      setState(() => _msg = 'ابتدا ایمیل کارمند را وارد کنید.');
+    if (code.isEmpty && email.isEmpty) {
+      setState(() => _msg = 'کد پرسنلی (یا ایمیل) کارمند را وارد کنید.');
       return;
     }
     final cam = _camera;
@@ -78,7 +82,11 @@ class _EnrollScreenState extends State<EnrollScreen> {
         setState(() => _msg = cap.error ?? 'چهره تشخیص داده نشد.');
         return;
       }
-      final res = await _api.enroll(embedding: cap.embedding!, email: email);
+      final res = await _api.enroll(
+        embedding: cap.embedding!,
+        personnelCode: code,
+        email: email,
+      );
       if (!res.ok) {
         setState(() => _msg = res.error ?? 'ثبت ناموفق بود.');
       } else {
@@ -102,13 +110,25 @@ class _EnrollScreenState extends State<EnrollScreen> {
       body: Column(
         children: [
           Padding(
-            padding: const EdgeInsets.all(14),
+            padding: const EdgeInsets.fromLTRB(14, 14, 14, 6),
+            child: TextField(
+              controller: _code,
+              textDirection: TextDirection.ltr,
+              keyboardType: TextInputType.number,
+              decoration: const InputDecoration(
+                labelText: 'کد پرسنلی',
+                hintText: '۱۰۲۳',
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(14, 0, 14, 10),
             child: TextField(
               controller: _email,
               textDirection: TextDirection.ltr,
               keyboardType: TextInputType.emailAddress,
               decoration: const InputDecoration(
-                labelText: 'ایمیل کارمند',
+                labelText: 'ایمیل کارمند (اختیاری)',
                 hintText: 'ali@company.ir',
               ),
             ),
