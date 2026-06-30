@@ -56,6 +56,31 @@ jobs:
       - name: Generate launcher icon from logo
         run: dart run flutter_launcher_icons
 
+      - name: Force modern compileSdk and disable R8 for plugins
+        # tflite_flutter's Android module pins compileSdk 31, but its transitive
+        # AndroidX deps require 33-34, which AGP treats as a hard error. A Gradle
+        # init script (DSL-agnostic) raises compileSdk on every Android module
+        # and disables R8 shrinking for the app (unneeded for a test build).
+        run: |
+          mkdir -p ~/.gradle/init.d
+          cat > ~/.gradle/init.d/simorgh-fixes.gradle <<'EOF'
+          allprojects {
+              afterEvaluate { proj ->
+                  def androidExt = proj.extensions.findByName('android')
+                  if (androidExt != null) {
+                      try { androidExt.compileSdk = 36 } catch (ignored) {
+                          try { androidExt.compileSdkVersion(36) } catch (ignored2) {}
+                      }
+                  }
+                  if (androidExt != null && proj.plugins.hasPlugin('com.android.application')) {
+                      def rel = androidExt.buildTypes.getByName('release')
+                      try { rel.minifyEnabled = false } catch (ignored) {}
+                      try { rel.shrinkResources = false } catch (ignored) {}
+                  }
+              }
+          }
+          EOF
+
       - name: Build release APK
         run: flutter build apk --release
 
