@@ -11,6 +11,8 @@ jobs:
   build-apk:
     name: Build Android APK
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
     steps:
       - name: Checkout source
@@ -84,9 +86,26 @@ jobs:
       - name: Build release APK
         run: flutter build apk --release
 
+      - name: Rename APK
+        run: cp build/app/outputs/flutter-apk/app-release.apk simorgh-device.apk
+
       - name: Upload APK artifact
         uses: actions/upload-artifact@v4
         with:
           name: simorgh-device-release-apk
-          path: build/app/outputs/flutter-apk/app-release.apk
+          path: simorgh-device.apk
           if-no-files-found: error
+
+      - name: Publish APK to a GitHub Release
+        # Gives a direct, phone-installable download link (a rolling pre-release
+        # that is overwritten on each successful build).
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: apk-latest
+          name: سیمرغ‌دستگاه — آخرین APK تست
+          prerelease: true
+          files: simorgh-device.apk
+          body: |
+            آخرین نسخهٔ تست اپلیکیشن سیمرغ‌دستگاه.
+            از فایل `simorgh-device.apk` زیر برای نصب روی تبلت/گوشی استفاده کنید.
+            ورود پیش‌فرض: admin / 1234
