@@ -26,8 +26,10 @@ ios/.symlinks/
 ios/Flutter/Flutter.framework
 ios/Flutter/Flutter.podspec
 
-# Models are large binaries — keep them out of git; see assets/models/README.md
+# Models are large binaries — keep them out of git; see assets/models/README.md.
+# Exception: the face model must be committed so CI bundles it into the APK.
 assets/models/*.tflite
+!assets/models/mobilefacenet.tflite
 
 # Misc
 *.log
