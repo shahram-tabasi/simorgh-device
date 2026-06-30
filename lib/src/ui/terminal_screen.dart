@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:convert';
 
 import 'package:camera/camera.dart';
@@ -37,6 +38,12 @@ class _TerminalScreenState extends State<TerminalScreen>
   String? _faceError; // model/camera load error
   _Feedback? _feedback;
 
+  // Continuous (multi-person) kiosk scanning.
+  bool _loopActive = false;
+  String _liveKind = 'in'; // active direction when direction == ask
+  final Map<String, DateTime> _cooldown = {};
+  static const _cooldownWindow = Duration(seconds: 45);
+
   AppConfig get _config => widget.config;
   late final ApiClient _api = ApiClient(_config);
 
@@ -75,6 +82,14 @@ class _TerminalScreenState extends State<TerminalScreen>
     }
 
     if (mounted) setState(() => _initializing = false);
+    _maybeStartContinuous();
+  }
+
+  @override
+  void didUpdateWidget(covariant TerminalScreen oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Settings may have toggled continuous mode while we were on this screen.
+    _maybeStartContinuous();
   }
 
   @override
@@ -138,6 +153,78 @@ class _TerminalScreenState extends State<TerminalScreen>
       _show(_Feedback.error('خطا: $e'));
     } finally {
       if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  String _effectiveKind() => switch (_config.direction) {
+        PunchDirection.outOnly => 'out',
+        PunchDirection.inOnly => 'in',
+        PunchDirection.ask => _liveKind,
+      };
+
+  void _maybeStartContinuous() {
+    if (_config.continuousMode && !_loopActive && _faceService != null) {
+      _continuousLoop();
+    }
+  }
+
+  /// Keeps scanning while continuous mode is on, punching each recognised
+  /// person in turn. Runs until the screen is disposed or the mode is off.
+  Future<void> _continuousLoop() async {
+    if (_loopActive) return;
+    _loopActive = true;
+    try {
+      while (mounted && _config.continuousMode) {
+        final cam = _camera;
+        final fs = _faceService;
+        if (cam != null && cam.value.isInitialized && fs != null && !_busy) {
+          await _scanOnce(cam, fs);
+        }
+        await Future<void>.delayed(const Duration(milliseconds: 1800));
+      }
+    } finally {
+      _loopActive = false;
+    }
+  }
+
+  /// One silent scan: only speaks up on a confident, non-duplicate match.
+  Future<void> _scanOnce(CameraController cam, FaceService fs) async {
+    if (_busy) return;
+    _busy = true;
+    try {
+      final shot = await cam.takePicture();
+      final capture = await fs.processFile(shot.path);
+      if (!capture.ok) return; // no face — stay quiet
+
+      final kind = _effectiveKind();
+      final photo = _config.attachPhoto ? _encodePhoto(capture.faceCrop!) : null;
+      final pos = _config.attachGps ? await _maybePosition() : null;
+
+      final res = await _api.identify(
+        embedding: capture.embedding!,
+        kind: kind,
+        photoBase64: photo,
+        lat: pos?.latitude,
+        lng: pos?.longitude,
+      );
+
+      if (!res.ok || !res.matched) return; // unknown face — stay quiet
+      if (res.score != null && res.score! < _config.matchThreshold) return;
+
+      final id = res.memberId ?? res.memberName ?? 'unknown';
+      final now = DateTime.now();
+      final last = _cooldown[id];
+      if (last != null && now.difference(last) < _cooldownWindow) {
+        return; // already punched this person moments ago
+      }
+      _cooldown[id] = now;
+
+      final dir = kind == 'out' ? 'خروج' : 'ورود';
+      _show(_Feedback.success(res.memberName ?? 'کاربر', dir, res.score));
+    } catch (_) {
+      // transient camera/network hiccup — ignore and keep scanning
+    } finally {
+      _busy = false;
     }
   }
 
@@ -291,7 +378,7 @@ class _TerminalScreenState extends State<TerminalScreen>
             ),
           ),
         ),
-        if (_busy)
+        if (_busy && !_config.continuousMode)
           Container(
             color: Colors.black54,
             child: const Center(
@@ -340,6 +427,7 @@ class _TerminalScreenState extends State<TerminalScreen>
   }
 
   Widget _actions() {
+    if (_config.continuousMode) return _continuousBar();
     final ask = _config.direction == PunchDirection.ask;
     return Padding(
       padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
@@ -379,6 +467,44 @@ class _TerminalScreenState extends State<TerminalScreen>
                     'ثبت ${_config.direction == PunchDirection.outOnly ? 'خروج' : 'ورود'}'),
               ),
             ),
+    );
+  }
+  Widget _continuousBar() {
+    final ask = _config.direction == PunchDirection.ask;
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          if (ask)
+            Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: SegmentedButton<String>(
+                segments: const [
+                  ButtonSegment(value: 'in', label: Text('ورود'), icon: Icon(Icons.login)),
+                  ButtonSegment(value: 'out', label: Text('خروج'), icon: Icon(Icons.logout)),
+                ],
+                selected: {_liveKind},
+                onSelectionChanged: (s) => setState(() => _liveKind = s.first),
+              ),
+            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              const SizedBox(
+                width: 16,
+                height: 16,
+                child: CircularProgressIndicator(strokeWidth: 2, color: SkTheme.gold),
+              ),
+              const SizedBox(width: 10),
+              Text(
+                'حالت پیوسته — روبه‌روی دوربین بایستید',
+                style: TextStyle(color: Colors.white.withOpacity(0.8)),
+              ),
+            ],
+          ),
+        ],
+      ),
     );
   }
 }

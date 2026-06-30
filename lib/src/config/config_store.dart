@@ -15,6 +15,7 @@ class ConfigStore {
   static const _kThreshold = 'match_threshold';
   static const _kAdminUser = 'admin_user';
   static const _kAdminPass = 'admin_pass';
+  static const _kContinuous = 'continuous_mode';
 
   Future<AppConfig> load() async {
     final p = await SharedPreferences.getInstance();
@@ -30,6 +31,7 @@ class ConfigStore {
       matchThreshold: p.getDouble(_kThreshold) ?? 0.62,
       adminUser: p.getString(_kAdminUser) ?? 'admin',
       adminPass: p.getString(_kAdminPass) ?? '1234',
+      continuousMode: p.getBool(_kContinuous) ?? false,
     );
   }
 
@@ -46,5 +48,6 @@ class ConfigStore {
     await p.setDouble(_kThreshold, c.matchThreshold);
     await p.setString(_kAdminUser, c.adminUser.trim());
     await p.setString(_kAdminPass, c.adminPass);
+    await p.setBool(_kContinuous, c.continuousMode);
   }
 }

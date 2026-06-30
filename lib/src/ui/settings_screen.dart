@@ -30,6 +30,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
   late bool _photo = widget.config.attachPhoto;
   late bool _gps = widget.config.attachGps;
   late bool _auto = widget.config.autoCapture;
+  late bool _continuous = widget.config.continuousMode;
   late double _threshold = widget.config.matchThreshold;
   bool _saving = false;
 
@@ -65,6 +66,7 @@ class _SettingsScreenState extends State<SettingsScreen> {
       matchThreshold: _threshold,
       adminUser: _adminUser.text.trim().isEmpty ? 'admin' : _adminUser.text,
       adminPass: _adminPass.text,
+      continuousMode: _continuous,
     );
     await widget.onSaved(c);
     if (!mounted) return;
@@ -129,6 +131,15 @@ class _SettingsScreenState extends State<SettingsScreen> {
             value: _auto,
             onChanged: (v) => setState(() => _auto = v),
             title: const Text('ثبت خودکار هنگام تشخیص چهره'),
+            activeColor: SkTheme.gold,
+          ),
+          SwitchListTile(
+            value: _continuous,
+            onChanged: (v) => setState(() => _continuous = v),
+            title: const Text('حالت پیوسته (اسکن خودکار چندنفره)'),
+            subtitle: const Text(
+                'دوربین مدام اسکن می‌کند و هر نفر را پشت‌سرهم ثبت می‌کند.',
+                style: TextStyle(fontSize: 12)),
             activeColor: SkTheme.gold,
           ),
           SwitchListTile(

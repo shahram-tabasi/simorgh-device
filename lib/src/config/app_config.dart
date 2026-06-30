@@ -50,6 +50,7 @@ class AppConfig {
     this.matchThreshold = 0.62,
     this.adminUser = 'admin',
     this.adminPass = '1234',
+    this.continuousMode = false,
   });
 
   /// e.g. https://app.simorghkara.ir  (no trailing slash needed)
@@ -73,6 +74,10 @@ class AppConfig {
   /// operator credentials required to unlock this terminal on launch.
   final String adminUser;
   final String adminPass;
+
+  /// continuous kiosk mode: the terminal scans automatically and punches each
+  /// recognised person in turn, instead of waiting for a button press.
+  final bool continuousMode;
 
   /// whether the terminal is locked behind the login screen on launch.
   bool get loginEnabled => adminPass.trim().isNotEmpty;
@@ -98,6 +103,7 @@ class AppConfig {
     double? matchThreshold,
     String? adminUser,
     String? adminPass,
+    bool? continuousMode,
   }) {
     return AppConfig(
       baseUrl: baseUrl ?? this.baseUrl,
@@ -111,6 +117,7 @@ class AppConfig {
       matchThreshold: matchThreshold ?? this.matchThreshold,
       adminUser: adminUser ?? this.adminUser,
       adminPass: adminPass ?? this.adminPass,
+      continuousMode: continuousMode ?? this.continuousMode,
     );
   }
 }
