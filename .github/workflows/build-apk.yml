@@ -1,0 +1,48 @@
+name: Build simorgh-device APK
+
+on:
+  push:
+    branches:
+      - main
+      - "claude/**"
+  workflow_dispatch:
+
+jobs:
+  build-apk:
+    name: Build Android APK
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout source
+        uses: actions/checkout@v4
+
+      - name: Set up Java (JDK 17)
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: stable
+          flutter-version: "3.24.0"
+          cache: true
+
+      - name: Generate Android platform files
+        # The repo keeps only a custom AndroidManifest.xml; this generates the
+        # Gradle/MainActivity scaffolding without touching existing files.
+        run: flutter create --org ir.simorghkara --platforms=android .
+
+      - name: Install dependencies
+        run: flutter pub get
+
+      - name: Build release APK
+        run: flutter build apk --release
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: simorgh-device-release-apk
+          path: build/app/outputs/flutter-apk/app-release.apk
+          if-no-files-found: error
